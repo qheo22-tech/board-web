@@ -1,32 +1,45 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiGet } from "../api/http";
+import { formatDateTime } from "../utils/date";
 
 export default function BoardList() {
   const nav = useNavigate();
 
+  // 게시글 목록
   const [posts, setPosts] = useState([]);
+
+  // 조회 에러 메시지
   const [err, setErr] = useState("");
+
+  // 헬스체크 결과
   const [pingResult, setPingResult] = useState("");
 
+  // 게시글 목록 조회
   useEffect(() => {
+    let alive = true;
+
     (async () => {
       try {
         setErr("");
         const data = await apiGet("/api/posts");
-        setPosts(data);
+        if (alive) setPosts(data);
       } catch (e) {
-        setErr(e.message);
+        if (alive) setErr(e.message);
       }
     })();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  // ✅ 핑 테스트용 API 호출
+  // 서버 헬스체크
   const handlePing = async () => {
     try {
       setPingResult("요청 중...");
       const res = await apiGet("/api/posts/ping");
-      setPingResult(`성공: ${res.message ?? res}`);
+      setPingResult(`성공: ${res?.message ?? "OK"}`);
     } catch (e) {
       setPingResult(`실패: ${e.message}`);
     }
@@ -45,7 +58,6 @@ export default function BoardList() {
         <h1 style={{ margin: 0 }}>게시판</h1>
 
         <div style={{ display: "flex", gap: 8 }}>
-          {/* ✅ 핑 테스트 버튼 */}
           <button onClick={handlePing} style={{ padding: "10px 14px" }}>
             핑 테스트
           </button>
@@ -56,7 +68,6 @@ export default function BoardList() {
         </div>
       </header>
 
-      {/* 핑 결과 표시 */}
       {pingResult && (
         <div
           style={{
@@ -94,7 +105,9 @@ export default function BoardList() {
               <span style={{ fontWeight: 600 }}>{p.title}</span>
               {p.hasFiles && <span title="첨부 있음">📎</span>}
             </div>
-            <div style={{ opacity: 0.7, fontSize: 13 }}>{p.createdAt}</div>
+            <div style={{ opacity: 0.7, fontSize: 13 }}>
+              {formatDateTime(p.createdAt)}
+            </div>
           </div>
         ))}
       </div>

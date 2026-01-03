@@ -11,9 +11,12 @@ export class ApiError extends Error {
 }
 
 // fetch 실패(네트워크 오류) 처리
-async function safeFetch(url, options) {
+async function safeFetch(url, options = {}) {
   try {
-    return await fetch(url, options);
+    return await fetch(url, {
+      credentials: "include", // 
+      ...options,
+    });
   } catch (e) {
     throw new ApiError({
       status: 0,
@@ -68,7 +71,7 @@ async function toApiError(res, fallbackMessage) {
 
 // 공통 HTTP 요청 유틸
 export async function apiGet(url) {
-  const res = await safeFetch(url);
+  const res = await safeFetch(url , { method: "GET" });
 
   if (!res.ok) {
     throw await toApiError(res, `GET 실패: ${res.status}`);
@@ -77,11 +80,14 @@ export async function apiGet(url) {
   return res.json().catch(() => ({}));
 }
 
+
 export async function apiJson(url, method, bodyObj) {
+  const hasBody = bodyObj !== undefined && bodyObj !== null;
+
   const res = await safeFetch(url, {
     method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(bodyObj),
+    headers: hasBody ? { "Content-Type": "application/json" } : undefined,
+    body: hasBody ? JSON.stringify(bodyObj) : undefined,
   });
 
   if (!res.ok) {
@@ -90,6 +96,7 @@ export async function apiJson(url, method, bodyObj) {
 
   return res.json().catch(() => ({}));
 }
+
 
 export async function apiForm(url, method, formData) {
   const res = await safeFetch(url, { method, body: formData });
